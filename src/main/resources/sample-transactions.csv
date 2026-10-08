@@ -1,0 +1,36 @@
+# transactionId,requestId,accountId,transactionType,amount,currency,sequenceNumber,eventTime,originalTransactionId
+transactionId,requestId,accountId,transactionType,amount,currency,sequenceNumber,eventTime,originalTransactionId
+
+# --- ACC-1001: out-of-order delivery (seq 3 and 2 arrive before seq 1) ---
+TXN-1003,REQ-1003,ACC-1001,DEBIT,200.00,INR,3,2026-10-08T10:03:00Z,
+TXN-1002,REQ-1002,ACC-1001,CREDIT,500.00,INR,2,2026-10-08T10:02:00Z,
+TXN-1001,REQ-1001,ACC-1001,CREDIT,1000.00,INR,1,2026-10-08T10:01:00Z,
+
+# --- duplicates arriving later (same request replayed, and same transaction with a new request id) ---
+TXN-1002,REQ-1002,ACC-1001,CREDIT,500.00,INR,2,2026-10-08T10:02:00Z,
+TXN-1001,REQ-1001-RETRY,ACC-1001,CREDIT,1000.00,INR,1,2026-10-08T10:01:00Z,
+
+# --- reversal of TXN-1003 (restores the 200.00) ---
+TXN-1004,REQ-1004,ACC-1001,REVERSAL,200.00,INR,4,2026-10-08T10:04:00Z,TXN-1003
+
+# --- ACC-2002: transient downstream failure (TXN-2002 fails twice, succeeds on 3rd attempt) ---
+TXN-2001,REQ-2001,ACC-2002,CREDIT,750.00,INR,1,2026-10-08T10:05:00Z,
+TXN-2002,REQ-2002,ACC-2002,DEBIT,100.00,INR,2,2026-10-08T10:06:00Z,
+
+# --- ACC-3003: retries exhausted (TXN-3001 -> FAILED, TXN-3002 blocked behind it) ---
+TXN-3001,REQ-3001,ACC-3003,CREDIT,300.00,INR,1,2026-10-08T10:07:00Z,
+TXN-3002,REQ-3002,ACC-3003,DEBIT,50.00,INR,2,2026-10-08T10:08:00Z,
+
+# --- invalid records: isolated, batch keeps going ---
+TXN-9001,REQ-9001,ACC-4004,CREDIT,-50.00,INR,1,2026-10-08T10:09:00Z,
+,REQ-9002,ACC-4004,CREDIT,10.00,INR,1,2026-10-08T10:09:00Z,
+TXN-9003,REQ-9003,ACC-4004,TRANSFER,10.00,INR,1,2026-10-08T10:09:00Z,
+TXN-9004,REQ-9004,ACC-4004,CREDIT,abc,INR,1,not-a-time,
+
+# --- business rule rejection (debit on an empty account) ---
+TXN-5001,REQ-5001,ACC-5005,DEBIT,100.00,INR,1,2026-10-08T10:10:00Z,
+TXN-5002,REQ-5002,ACC-5005,CREDIT,40.00,INR,2,2026-10-08T10:11:00Z,
+
+# --- ACC-6006: sequence 2 never arrives, so sequence 3 stays pending and the gap is reported ---
+TXN-6001,REQ-6001,ACC-6006,CREDIT,10.00,INR,1,2026-10-08T10:12:00Z,
+TXN-6003,REQ-6003,ACC-6006,CREDIT,30.00,INR,3,2026-10-08T10:14:00Z,
